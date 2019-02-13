@@ -31,10 +31,24 @@
 
 ######## SGX SDK Settings ########
 
-SGX_SDK ?= /opt/intel/sgxsdk
+#/opt/intel/sgxsdk/bin/x64/sgx_edger8r
+
+#/home/user/github/linux-sgx/build/linux/sgx_edger8r
+#/home/user/github/linux-sgx/linux/installer/bin/sgxsdk/lib64
+#/home/user/github/linux-sgx/linux/installer/bin/sgxsdk/include
+
+#home/user/github/linux-sgx/
+
+#SGX_SDK ?= /opt/intel/sgxsdk
+#SGX_SDK ?= /home/user/github/linux-sgx
+SGX_SDK ?= /home/user/github/linux-sgx/linux/installer/bin/sgxsdk
+SGX_INCLUDE ?= /include
+SGX_TOOLS ?= /bin/x64
 SGX_MODE ?= HW
 SGX_ARCH ?= x64
 SGX_DEBUG ?= 1
+
+
 
 ifeq ($(shell getconf LONG_BIT), 32)
 	SGX_ARCH := x86
@@ -42,16 +56,36 @@ else ifeq ($(findstring -m32, $(CXXFLAGS)), -m32)
 	SGX_ARCH := x86
 endif
 
+#/home/user/github/linux-sgx/linux/installer/bin/sgxsdk
+#/home/user/github/linux-sgx/linux/installer/bin/sgxsdk/sdk_libs/
+
+#./gcc/x86_64-linux-gnu/7/include/sgxintrin.h
+#./x86_64-linux-gnu/libsgx_enclave_common.so.1.0.102.0
+#./x86_64-linux-gnu/libsgx_uae_service.so
+#./x86_64-linux-gnu/libsgx_uae_service.so.1.0.102.0
+#./x86_64-linux-gnu/libsgx_urts.so.1
+#./x86_64-linux-gnu/libsgx_enclave_common.so.1
+#./x86_64-linux-gnu/libsgx_urts.so.1.0.102.0
+#./x86_64-linux-gnu/libsgx_uae_service.so.1
+#./x86_64-linux-gnu/libsgx_enclave_common.so
+#./x86_64-linux-gnu/libsgx_urts.so
+
+
+
+
+
 ifeq ($(SGX_ARCH), x86)
 	SGX_COMMON_CFLAGS := -m32 
-	SGX_LIBRARY_PATH := $(SGX_SDK)/lib
-	SGX_ENCLAVE_SIGNER := $(SGX_SDK)/bin/x86/sgx_sign
-	SGX_EDGER8R := $(SGX_SDK)/bin/x86/sgx_edger8r
+	SGX_LIBRARY_PATH := $(SGX_SDK)/lib64
+	SGX_ENCLAVE_SIGNER := $(SGX_SDK)$(SGX_TOOLS)/sgx_sign
+	SGX_EDGER8R := $(SGX_SDK)$(SGX_TOOLS)/sgx_edger8r
 else
 	SGX_COMMON_CFLAGS := -m64
+	#SGX_LIBRARY_PATH := /home/user/github/linux-sgx/psw/urts/linux
 	SGX_LIBRARY_PATH := $(SGX_SDK)/lib64
-	SGX_ENCLAVE_SIGNER := $(SGX_SDK)/bin/x64/sgx_sign
-	SGX_EDGER8R := $(SGX_SDK)/bin/x64/sgx_edger8r
+	#SGX_LIBRARY_PATH := $(SGX_SDK)/linux/installer/bin/sgxsdk/lib64
+	SGX_ENCLAVE_SIGNER := $(SGX_SDK)$(SGX_TOOLS)/sgx_sign
+	SGX_EDGER8R := $(SGX_SDK)$(SGX_TOOLS)/sgx_edger8r
 endif
 
 ifeq ($(SGX_DEBUG), 1)
@@ -75,7 +109,7 @@ else
 endif
 
 App_Cpp_Files := App/App.cpp 
-App_Include_Paths := -IInclude -IApp -I$(SGX_SDK)/include
+App_Include_Paths := -IInclude -IApp -I$(SGX_SDK)$(SGX_INCLUDE)
 
 App_C_Flags := $(SGX_COMMON_CFLAGS) -fPIC -Wno-attributes -D_FORTIFY_SOURCE=2 $(App_Include_Paths)
 
@@ -92,6 +126,8 @@ else
 endif
 
 App_Cpp_Flags := $(App_C_Flags) -std=gnu++11
+#App_Link_Flags := $(SGX_COMMON_CFLAGS) -L$(SGX_LIBRARY_PATH) -L /home/user/github/linux-sgx/psw/uae_service/linux -L /home/user/github/linux-sgx/build/linux -l$(Urts_Library_Name) -lpthread 
+
 App_Link_Flags := $(SGX_COMMON_CFLAGS) -L$(SGX_LIBRARY_PATH) -l$(Urts_Library_Name) -lpthread 
 
 ifneq ($(SGX_MODE), HW)
@@ -118,7 +154,7 @@ endif
 Crypto_Library_Name := sgx_tcrypto
 
 Enclave_Cpp_Files := Enclave/Enclave.cpp 
-Enclave_Include_Paths := -IInclude -IEnclave -I$(SGX_SDK)/include -I$(SGX_SDK)/include/tlibc -I$(SGX_SDK)/include/stlport
+Enclave_Include_Paths := -IInclude -IEnclave -I$(SGX_SDK)$(SGX_INCLUDE) -I$(SGX_SDK)$(SGX_INCLUDE)/tlibc -I$(SGX_SDK)$(SGX_INCLUDE)/stlport
 
 Enclave_C_Flags := $(SGX_COMMON_CFLAGS) -nostdinc -fvisibility=hidden -fpie -fstack-protector $(Enclave_Include_Paths)
 Enclave_Cpp_Flags := $(Enclave_C_Flags) -std=gnu++11 -nostdinc++
@@ -132,11 +168,13 @@ Enclave_Cpp_Flags := $(Enclave_C_Flags) -std=gnu++11 -nostdinc++
 # Otherwise, you may get some undesirable errors.
 Enclave_Link_Flags := $(SGX_COMMON_CFLAGS) -Wl,--no-undefined -nostdlib -nodefaultlibs -nostartfiles -L$(SGX_LIBRARY_PATH) \
 	-Wl,--whole-archive -l$(Trts_Library_Name) -Wl,--no-whole-archive \
-	-Wl,--start-group -lsgx_tstdc -lsgx_tstdcxx -l$(Crypto_Library_Name) -l$(Service_Library_Name) -Wl,--end-group \
+	-Wl,--start-group -lsgx_tstdc -lsgx_tcxx -l$(Crypto_Library_Name) -l$(Service_Library_Name) -Wl,--end-group \
 	-Wl,-Bstatic -Wl,-Bsymbolic -Wl,--no-undefined \
 	-Wl,-pie,-eenclave_entry -Wl,--export-dynamic  \
 	-Wl,--defsym,__ImageBase=0 \
 	-Wl,--version-script=Enclave/Enclave.lds
+
+#	-Wl,--start-group -lsgx_tstdc -lsgx_tstdcxx -l$(Crypto_Library_Name) -l$(Service_Library_Name) -Wl,--end-group \
 
 Enclave_Cpp_Objects := $(Enclave_Cpp_Files:.cpp=.o)
 
@@ -197,7 +235,7 @@ endif
 ######## App Objects ########
 
 App/Enclave_u.c: $(SGX_EDGER8R) Enclave/Enclave.edl
-	@cd App && $(SGX_EDGER8R) --untrusted ../Enclave/Enclave.edl --search-path ../Enclave --search-path $(SGX_SDK)/include
+	@cd App && $(SGX_EDGER8R) --untrusted ../Enclave/Enclave.edl --search-path ../Enclave --search-path $(SGX_SDK)$(SGX_INCLUDE)
 	@echo "GEN  =>  $@"
 
 App/Enclave_u.o: App/Enclave_u.c
@@ -219,7 +257,7 @@ $(App_Name): App/Enclave_u.o $(App_Cpp_Objects)
 ######## Enclave Objects ########
 
 Enclave/Enclave_t.c: $(SGX_EDGER8R) Enclave/Enclave.edl
-	@cd Enclave && $(SGX_EDGER8R) --trusted ../Enclave/Enclave.edl --search-path ../Enclave --search-path $(SGX_SDK)/include
+	@cd Enclave && $(SGX_EDGER8R) --trusted ../Enclave/Enclave.edl --search-path ../Enclave --search-path $(SGX_SDK)$(SGX_INCLUDE)
 	@echo "GEN  =>  $@"
 
 Enclave/Enclave_t.o: Enclave/Enclave_t.c
@@ -235,7 +273,8 @@ $(Enclave_Name): Enclave/Enclave_t.o $(Enclave_Cpp_Objects)
 	@echo "LINK =>  $@"
 
 $(Signed_Enclave_Name): $(Enclave_Name)
-	@$(SGX_ENCLAVE_SIGNER) sign -key Enclave/Enclave_private.pem -enclave $(Enclave_Name) -out $@ -config $(Enclave_Config_File)
+	@$(SGX_ENCLAVE_SIGNER) sign -key Enclave/Enclave_private.pem -enclave $(Enclave_Name) -out $@
+	#@$(SGX_ENCLAVE_SIGNER) sign -key Enclave/Enclave_private.pem -enclave $(Enclave_Name) -out $@ -config $(Enclave_Config_File)
 	@echo "SIGN =>  $@"
 
 .PHONY: clean
