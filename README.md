@@ -1,6 +1,9 @@
 # SGX-ROP: Practical Enclave Malware with Intel SGX
 
-This repository contains the implementations of the paper "Practical Enclave Malware with Intel SGX". 
+This repository contains the implementations of the DIMVA 2019 paper 
+
+* [Practical Enclave Malware with Intel SGX](https://misc0110.net/files/sgxrop.pdf) by Schwarz, Weiser, and Gruss
+
 The repository consists of three parts: `tap_claw`, `demo`, and `egghunter`. 
 
 ## TAP + CLAW
